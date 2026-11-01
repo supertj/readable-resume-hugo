@@ -1,0 +1,188 @@
+{{- /*
+  Readable Resume: the Classic layout from ReadableResume, as one page.
+  The resume comes from the front matter of content/_index.md, the paper size
+  from resume_paper under [params] in hugo.toml.
+*/ -}}
+
+{{- /* Same page setup as the Google Docs original: 0.6 in margins on US Letter,
+    15 mm on A4. Width and height draw the sheet on screen. */ -}}
+{{- $papers := dict
+  "letter" (dict "size" "letter" "width" "8.5in" "height" "11in" "margin" "0.6in")
+  "a4" (dict "size" "A4" "width" "210mm" "height" "297mm" "margin" "15mm")
+-}}
+{{- $paperName := site.Params.resume_paper | default "letter" | printf "%v" | lower -}}
+{{- if not (isset $papers $paperName) -}}
+  {{- errorf "resume_paper in hugo.toml should be letter or a4, not %q." $paperName -}}
+{{- end -}}
+{{- $paper := index $papers $paperName -}}
+
+{{- /* Whether an entry has a school, a company or a name decides its layout */ -}}
+{{- $entryFields := dict
+  "school" (slice "school" "location" "degree" "date")
+  "company" (slice "company" "location" "title" "date")
+  "name" (slice "name" "role" "date")
+-}}
+<!doctype html>
+<html lang="{{ site.Language.Lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ with .Title }}{{ . }} – Resume{{ else }}Resume{{ end }}</title>
+{{- with .Description }}
+<meta name="description" content="{{ . }}">
+{{- end }}
+<style>
+@page { size: {{ $paper.size | safeCSS }}; margin: {{ $paper.margin | safeCSS }}; }
+:root { --sheet-width: {{ $paper.width | safeCSS }}; --sheet-height: {{ $paper.height | safeCSS }}; --sheet-margin: {{ $paper.margin | safeCSS }}; }
+</style>
+{{ partial "style.html" . }}
+{{ partial "hooks/head-end.html" . }}
+</head>
+<body>
+{{ partial "hooks/before-resume.html" . }}
+<main class="sheet">
+  <header>
+    {{- with .Title }}
+    <h1>{{ . }}</h1>
+    {{- end }}
+    {{- with .Params.contact }}
+    <p class="contact">
+      {{- range $i, $item := . -}}
+      {{- $text := "" -}}
+      {{- $url := "" -}}
+      {{- if reflect.IsMap $item -}}
+        {{- range $key, $_ := $item -}}
+          {{- if not (in (slice "text" "url") $key) -}}
+            {{- errorf "content/_index.md: unknown field %q in a contact item. Expected text or url." $key -}}
+          {{- end -}}
+        {{- end -}}
+        {{- $url = $item.url | default "" | printf "%v" -}}
+        {{- $text = $item.text | default $url | printf "%v" -}}
+      {{- else -}}
+        {{- $text = printf "%v" $item -}}
+        {{- $lowered := lower $text -}}
+        {{- if or (hasPrefix $lowered "https://") (hasPrefix $lowered "http://") -}}
+          {{- $url = $text -}}
+        {{- else if hasPrefix $lowered "mailto:" -}}
+          {{- $url = $text -}}
+          {{- $text = substr $text 7 -}}
+        {{- /* Only a bare address, so Markdown such as [Email](mailto:...) stays Markdown */ -}}
+        {{- else if findRE `^[A-Za-z0-9._%+'-]+@[A-Za-z0-9-]+([.][A-Za-z0-9-]+)+$` $text -}}
+          {{- $url = printf "mailto:%s" $text -}}
+        {{- end -}}
+      {{- end -}}
+      {{- $scheme := lower $url -}}
+      {{- if $i }} | {{ end -}}
+      {{- if not $url -}}
+        {{- $.RenderString $text -}}
+      {{- else if or (hasPrefix $scheme "https://") (hasPrefix $scheme "http://") (hasPrefix $scheme "mailto:") (hasPrefix $scheme "tel:") -}}
+        {{- /* safeURL keeps tel: links, which Go templates would otherwise blank out. Only these schemes
+            get this far, so a pasted javascript: link can't end up on the page. */ -}}
+        <a href="{{ $url | safeURL }}">{{ $text }}</a>
+      {{- else -}}
+        {{- errorf "content/_index.md: a contact url should start with https://, http://, mailto: or tel:, not %q." $url -}}
+      {{- end -}}
+      {{- end -}}
+    </p>
+    {{- end }}
+  </header>
+  {{- range $section := .Params.sections }}
+  {{- range $key, $_ := $section -}}
+    {{- if not (in (slice "title" "text" "entries" "lines") $key) -}}
+      {{- errorf "content/_index.md: unknown field %q in a section. Expected one of: title, text, entries, lines." $key -}}
+    {{- end -}}
+  {{- end }}
+  <section>
+    {{- with $section.title }}
+    <h2>{{ $.RenderString (printf "%v" .) }}</h2>
+    {{- end }}
+    {{- with $section.text }}
+    {{ $.RenderString (dict "display" "block") (printf "%v" .) | strings.TrimSpace | safeHTML }}
+    {{- end }}
+    {{- $where := printf "an entry under %q" (printf "%v" ($section.title | default "a section")) -}}
+    {{- range $entry := $section.entries | default slice }}
+    {{- $kind := "" -}}
+    {{- range slice "school" "company" "name" -}}
+      {{- if and (not $kind) (isset $entry .) -}}{{- $kind = . -}}{{- end -}}
+    {{- end -}}
+    {{- $fieldCount := len $entry -}}
+    {{- if and (not $kind) (gt $fieldCount (cond (isset $entry "bullets") 1 0)) -}}
+      {{- errorf "content/_index.md: %s needs a school, company or name field to say how it's laid out." $where -}}
+    {{- end -}}
+    {{- range $key, $_ := $entry -}}
+      {{- /* An entry without a kind has already failed above */ -}}
+      {{- if and $kind (ne $key "bullets") (not (in (index $entryFields $kind) $key)) -}}
+        {{- errorf "content/_index.md: unknown field %q in %s. Expected one of: %s, bullets." $key $where (delimit (index $entryFields $kind) ", ") -}}
+      {{- end -}}
+    {{- end -}}
+    {{- /* Each field as inline Markdown, empty when it's left out */ -}}
+    {{- $field := dict -}}
+    {{- range slice "school" "company" "name" "location" "degree" "title" "role" "date" -}}
+      {{- $value := "" -}}
+      {{- with index $entry . }}{{ $value = $.RenderString (printf "%v" .) | strings.TrimSpace }}{{ end -}}
+      {{- $field = merge $field (dict . $value) -}}
+    {{- end -}}
+    {{- $rows := slice -}}
+    {{- if eq $kind "school" -}}
+      {{- /* School and location, then degree and dates in italics */ -}}
+      {{- $rows = slice
+        (slice (cond (ne $field.school "") (printf "<strong>%s</strong>" $field.school) "") $field.location)
+        (slice (cond (ne $field.degree "") (printf "<em>%s</em>" $field.degree) "") (cond (ne $field.date "") (printf "<em>%s</em>" $field.date) "")) -}}
+    {{- else if eq $kind "company" -}}
+      {{- /* Company and location, then the job title in italics with the dates */ -}}
+      {{- $rows = slice
+        (slice (cond (ne $field.company "") (printf "<strong>%s</strong>" $field.company) "") $field.location)
+        (slice (cond (ne $field.title "") (printf "<em>%s</em>" $field.title) "") $field.date) -}}
+    {{- else if eq $kind "name" -}}
+      {{- /* One line: "Name | Role" with the dates on the right */ -}}
+      {{- $label := slice -}}
+      {{- with $field.name }}{{ $label = $label | append (printf "<strong>%s</strong>" .) }}{{ end -}}
+      {{- with $field.role }}{{ $label = $label | append (printf "<em>%s</em>" .) }}{{ end -}}
+      {{- $rows = slice (slice (delimit $label " | ") $field.date) -}}
+    {{- end }}
+    <div class="entry">
+      {{- $hasRows := false -}}
+      {{- range $rows }}{{ if or (index . 0) (index . 1) }}{{ $hasRows = true }}{{ end }}{{ end -}}
+      {{- if $hasRows }}
+      <div class="entry-head">
+        {{- range $row := $rows }}
+        {{- if or (index $row 0) (index $row 1) }}
+        <p class="row"><span>{{ index $row 0 | safeHTML }}</span>{{ with index $row 1 }} <span class="right">{{ . | safeHTML }}</span>{{ end }}</p>
+        {{- end }}
+        {{- end }}
+      </div>
+      {{- end }}
+      {{- with $entry.bullets }}
+      {{- /* role="list" because Safari stops announcing a list once list-style is none */}}
+      <ul role="list">
+        {{- range . }}
+        <li>{{ $.RenderString (printf "%v" .) | strings.TrimSpace | safeHTML }}</li>
+        {{- end }}
+      </ul>
+      {{- end }}
+    </div>
+    {{- end }}
+    {{- with $section.lines }}
+    <p class="lines">
+      {{- range $i, $line := . -}}
+      {{- if $i }}<br>{{ end -}}
+      {{- if reflect.IsMap $line -}}
+        {{- range $key, $_ := $line -}}
+          {{- if not (in (slice "label" "text") $key) -}}
+            {{- errorf "content/_index.md: unknown field %q in a line. Expected label or text." $key -}}
+          {{- end -}}
+        {{- end -}}
+        {{- with $line.label }}<strong>{{ $.RenderString (printf "%v" .) }}:</strong> {{ end -}}
+        {{- with $line.text }}{{ $.RenderString (printf "%v" .) }}{{ end -}}
+      {{- else -}}
+        {{- $.RenderString (printf "%v" $line) -}}
+      {{- end -}}
+      {{- end -}}
+    </p>
+    {{- end }}
+  </section>
+  {{- end }}
+</main>
+{{ partial "hooks/after-resume.html" . }}
+</body>
+</html>

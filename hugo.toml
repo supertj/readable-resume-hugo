@@ -1,0 +1,9 @@
+# Defaults for the theme. Your site's hugo.toml can override anything under
+# [params]; Hugo only takes params and module settings from a theme.
+
+[module.hugoVersion]
+  min = "0.128.0"
+
+[params]
+  # letter or a4: the page size and margins used when you print to PDF
+  resume_paper = "letter"

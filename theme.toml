@@ -1,0 +1,14 @@
+name = "Readable Resume"
+license = "MIT"
+licenselink = "https://github.com/supertj/readable-resume-hugo/blob/main/LICENSE"
+description = "A one-page resume in one column that prints to a clean PDF on Letter or A4"
+homepage = "https://github.com/supertj/readable-resume-hugo"
+demosite = "https://readableresume.com/templates/classic"
+tags = ["resume", "cv", "minimal", "print", "single page", "no javascript"]
+features = ["one-page resume from front matter", "prints to PDF on US Letter or A4", "plain text in reading order for applicant tracking systems", "inline CSS, no JavaScript or web fonts"]
+min_version = "0.128.0"
+
+[author]
+  name = "Super Lede"
+  homepage = "https://readableresume.com"
+

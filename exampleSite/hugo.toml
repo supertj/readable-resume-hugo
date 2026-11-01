@@ -1,0 +1,16 @@
+# The sample site. Run it from the theme's folder:
+#   hugo server -s exampleSite
+# In your own site, copy everything below except themesDir.
+
+baseURL = "https://example.com/"
+title = "Resume"
+theme = "readable-resume-hugo"
+# The theme is this repository. Your own site keeps it in themes/ and drops this line
+themesDir = "../.."
+
+# The resume is a single page, so skip the pages Hugo makes for blogs
+disableKinds = ["taxonomy", "term", "section", "page", "rss"]
+
+[params]
+  # letter or a4: the page size and margins used when you print to PDF
+  resume_paper = "letter"
