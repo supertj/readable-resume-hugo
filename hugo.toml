@@ -7,3 +7,5 @@
 [params]
   # letter or a4: the page size and margins used when you print to PDF
   resume_paper = "letter"
+  # Add rel="nofollow" to links to other sites, in the contact line and in Markdown
+  nofollow_external_links = true

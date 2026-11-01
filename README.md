@@ -167,14 +167,16 @@ dialog matches, since they don't always pick it up from the page.
 | Setting | Default | What it does |
 |---|---|---|
 | `resume_paper` under `[params]` | `"letter"` | `"letter"` or `"a4"`. Sets the page size and margins for printing, and the size of the sheet on screen. |
+| `nofollow_external_links` under `[params]` | `true` | Adds `rel="nofollow"` to links to other sites, in the contact line and in Markdown. Set it to `false` to leave links as they are. |
 
 ## Changing the design
 
-The theme has one page template and one stylesheet:
+The theme has three files you might want to change:
 
 - `layouts/partials/style.html` has all the CSS. Font sizes are in points so
   the printed page matches the original.
 - `layouts/index.html` builds the page from the front matter.
+- `layouts/_default/_markup/render-link.html` renders Markdown links.
 
 To change either one, copy it into the same path in your own site and edit it
 there. Hugo uses your copy instead of the theme's.

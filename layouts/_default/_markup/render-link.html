@@ -1,0 +1,6 @@
+{{- /* Markdown links. Links to other sites get rel="nofollow" unless
+    nofollow_external_links is false under [params]. */ -}}
+{{- $url := urls.Parse .Destination -}}
+{{- $external := and (in (slice "http" "https") (lower $url.Scheme)) (ne (lower $url.Host) (lower (urls.Parse site.BaseURL).Host)) -}}
+<a href="{{ .Destination | safeURL }}"{{ with .Title }} title="{{ . }}"{{ end }}{{ if and $external site.Params.nofollow_external_links }} rel="nofollow"{{ end }}>{{ .Text }}</a>
+{{- /* No trailing newline in the output */ -}}

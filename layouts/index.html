@@ -78,7 +78,9 @@
       {{- else if or (hasPrefix $scheme "https://") (hasPrefix $scheme "http://") (hasPrefix $scheme "mailto:") (hasPrefix $scheme "tel:") -}}
         {{- /* safeURL keeps tel: links, which Go templates would otherwise blank out. Only these schemes
             get this far, so a pasted javascript: link can't end up on the page. */ -}}
-        <a href="{{ $url | safeURL }}">{{ $text }}</a>
+        {{- $parsed := urls.Parse $url -}}
+        {{- $external := and (in (slice "http" "https") (lower $parsed.Scheme)) (ne (lower $parsed.Host) (lower (urls.Parse site.BaseURL).Host)) -}}
+        <a href="{{ $url | safeURL }}"{{ if and $external site.Params.nofollow_external_links }} rel="nofollow"{{ end }}>{{ $text }}</a>
       {{- else -}}
         {{- errorf "content/_index.md: a contact url should start with https://, http://, mailto: or tel:, not %q." $url -}}
       {{- end -}}

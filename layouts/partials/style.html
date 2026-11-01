@@ -101,7 +101,9 @@ header + section h2 {
 
 .right {
 	margin-left: auto;
-	white-space: nowrap;
+	/* Flex items are measured on one line, so short dates and places never
+	   break; only text wider than the whole line wraps (a long place on a phone) */
+	text-align: right;
 }
 
 /* Same hang as the Docs file: dot at 0.1 in, text at 0.25 in. It's a hanging
