@@ -1,0 +1,10 @@
+{{- /* Whether a link goes to another site: http(s) or scheme-relative (//host)
+    with a host other than baseURL's. The host is read with a pattern rather
+    than urls.Parse, which stops the build on links like https://example.org/100% */ -}}
+{{- $pattern := `^(?i)(?:https?:)?//(?:[^/?#@]*@)?(\[[^\]]*\]|[^/?#:]*)` -}}
+{{- $external := false -}}
+{{- with findRESubmatch $pattern . 1 -}}
+  {{- $host := lower (index (index . 0) 1) -}}
+  {{- $external = ne $host (lower (urls.Parse site.BaseURL).Hostname) -}}
+{{- end -}}
+{{- return $external -}}
