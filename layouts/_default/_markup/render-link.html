@@ -1,0 +1,11 @@
+{{- /* Markdown links. Links to other sites get rel="nofollow" unless
+    nofollow_external_links is false under [params]. */ -}}
+{{- $external := partial "readable-resume/is-external.html" .Destination -}}
+{{- /* Go templates blank out tel: links, so only those get safeURL. Every other
+    link, javascript: included, goes through Go's own URL filter. */ -}}
+{{- $href := .Destination -}}
+{{- if hasPrefix (lower .Destination) "tel:" -}}
+  {{- $href = .Destination | safeURL -}}
+{{- end -}}
+<a href="{{ $href }}"{{ with .Title }} title="{{ . }}"{{ end }}{{ if and $external site.Params.nofollow_external_links }} rel="nofollow"{{ end }}>{{ .Text }}</a>
+{{- /* No trailing newline in the output */ -}}
